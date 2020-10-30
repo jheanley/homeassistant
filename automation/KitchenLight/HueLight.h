@@ -8,7 +8,7 @@
 class HueLight
 {
 public:
-  HueLight(int numLeds);
+  HueLight();
   virtual ~HueLight();
 
 private:

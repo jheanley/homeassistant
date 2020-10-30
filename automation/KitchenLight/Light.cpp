@@ -7,6 +7,11 @@ Light::Light()
   
 }
 
+Light::~Light()
+{
+  
+}
+
 void Light::setState(State state)
 {
   m_state = state;
@@ -31,4 +36,28 @@ void Light::setState( const std::string& state )
   {
     m_state = Off;
   }
+}
+
+int Light::brightness() const
+{
+  return m_brightness;
+}
+
+void Light::setBrightness(int brightness)
+{
+  m_brightness = max(min(brightness, 255), 0);
+  m_brightness = brightness;
+}
+
+void Light::apply()
+{
+  if( m_controlPin != -1 )
+  {
+    analogWrite(m_controlPin, m_brightness);
+  }
+}
+
+void Light::mqttMessage(MqttClient::MessageData& md)
+{
+  
 }

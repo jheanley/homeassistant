@@ -8,7 +8,7 @@
 // WiFi parameters to be configured
 const char* ssid = "SH1T";
 const char* password = "Bo11ock3";
-#define MQTT_SERVER_IP "192.168.1.145"
+#define MQTT_SERVER_IP "192.168.0.26"
 MQTTClient* pMQTTClient(nullptr);
 int LIGHT1 = 0;
 int LIGHT2 = 2;
@@ -61,18 +61,12 @@ void processMessage(MqttClient::MessageData& md)
     }
 }
 
-void connectMqtt()
-{
-  pMQTTClient = new MQTTClient();
-  pMQTTClient->setup(processMessage);
-}
-
 void setup()
 {
   Serial.begin(HW_UART_SPEED);
   while (!Serial);
   connectWifi();
-  connectMqtt();
+  //connectMqtt();
   pinMode(LIGHT1, OUTPUT);
   pinMode(LIGHT2, OUTPUT);
 }
