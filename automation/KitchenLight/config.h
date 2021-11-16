@@ -7,4 +7,6 @@ const char* WIRELESS_PASSWORD = "Bo11ock3";
 
 #define MQTT_SERVER_IP "192.168.0.26"
 
+#define MQTT_SERVER_ID "homeassistant"
+
 #endif // CONFIG_H

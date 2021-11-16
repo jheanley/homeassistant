@@ -1,38 +1,11 @@
+#ifndef MQTT_NETWORK_H
+#define MQTT_NETWORK_H
+
+#include <common.h>
 #include <MqttClient.h>
-
-#define MQTT_ID "homeassistant/kids-bedroom"
-#define MQTT_CLIENT "192.168.1.145"
-const char* MQTT_TOPIC_LIGHT1 = MQTT_ID "/light1";
-const char* MQTT_TOPIC_LIGHT2 = MQTT_ID "/light2";
-const char* MQTT_TOPIC_PUB = MQTT_ID "/pub";
-
-#define LOG_PRINTFLN(fmt, ...)	logfln(fmt, ##__VA_ARGS__)
-#define LOG_SIZE_MAX 128
-void logfln(const char *fmt, ...) {
-	char buf[LOG_SIZE_MAX];
-	va_list ap;
-	va_start(ap, fmt);
-	vsnprintf(buf, LOG_SIZE_MAX, fmt, ap);
-	va_end(ap);
-	Serial.println(buf);
-}
 
 static MqttClient *mqtt = NULL;
 static WiFiClient network;
-
-
-void processMessage2(MqttClient::MessageData& md)
-{
-    LOG_PRINTFLN("processMessage2");
-    const MqttClient::Message& msg = md.message;
-    char payload[msg.payloadLen + 1];
-    memcpy(payload, msg.payload, msg.payloadLen);
-    payload[msg.payloadLen] = '\0';
-    LOG_PRINTFLN(
-     "Message arrived: qos %d, retained %d, dup %d, packetid %d, payload:[%s]",
-      msg.qos, msg.retained, msg.dup, msg.id, payload
-    );
-}
 
 class System: public MqttClient::System {
 public:
@@ -49,21 +22,25 @@ public:
 class MQTTClient
 {
 public:
-    void setup( MqttClient::MessageHandlerCbk cbMessageHandler )
+    void setup( std::string serverIP, std::string clientid, std::string username, std::string password, MqttClient::MessageHandlerCbk cbMessageHandler )
     {
-        Serial.println("MQTTClient::setup()");
+        LOG_PRINTFLN("MQTTClient::setup()");
+        m_serverId = serverIP;
+        m_clientId = clientid;
+        m_username = username;
+        m_password = password;
         m_cbMessageHandler = cbMessageHandler;
         mqttSystem = new System;
         mqttLogger = new MqttClient::LoggerImpl<HardwareSerial>(Serial);
         mqttNetwork = new MqttClient::NetworkClientImpl<Client>(network, *mqttSystem);
 
-        Serial.println("MQTTClient::setup() - create buffers");
+        LOG_PRINTFLN("MQTTClient::setup() - create buffers");
         //// Make 128 bytes send buffer
-        MqttClient::Buffer *mqttSendBuffer = new MqttClient::ArrayBuffer<128>();
+        MqttClient::Buffer *mqttSendBuffer = new MqttClient::ArrayBuffer<1024>();
         //// Make 128 bytes receive buffer
-        MqttClient::Buffer *mqttRecvBuffer = new MqttClient::ArrayBuffer<128>();
+        MqttClient::Buffer *mqttRecvBuffer = new MqttClient::ArrayBuffer<1024>();
 
-        Serial.println("MQTTClient::setup() - create message handlers");
+        LOG_PRINTFLN("MQTTClient::setup() - create message handlers");
         //// Allow up to 2 subscriptions simultaneously
         MqttClient::MessageHandlers *mqttMessageHandlers = new MqttClient::MessageHandlersImpl<2>();
         //// Configure client options
@@ -71,7 +48,7 @@ public:
         ////// Set command timeout to 10 seconds
         mqttOptions.commandTimeoutMs = 10000;
         //// Make client object
-        Serial.println("MQTTClient::setup() - create client");
+        LOG_PRINTFLN("MQTTClient::setup() - create client");
         mqtt = new MqttClient(
 	        mqttOptions, *mqttLogger, *mqttSystem, *mqttNetwork, *mqttSendBuffer,
 	        *mqttRecvBuffer, *mqttMessageHandlers
@@ -84,7 +61,12 @@ public:
 //        }
     }
 
-    void update()
+    void addSubscribeTopic( const std::string& topic )
+    {
+        m_topics.push_back(topic);
+    }
+
+    bool update()
     {
         // Check connection status
 	    if (mqtt
@@ -93,64 +75,67 @@ public:
 		    network.stop();
 		    // Re-establish TCP connection with MQTT broker
             LOG_PRINTFLN("Connecting to MQTT broker");
-		    network.connect(MQTT_CLIENT, 1883);
+            network.connect(m_serverId.c_str(), 1883);
 		    if (!network.connected()) {
                 LOG_PRINTFLN("Can't establish the TCP connection");
 			    delay(5000);
-			    ESP.reset();
+                ESP.restart();
 		    }
             LOG_PRINTFLN("Start new connection");
 		    // Start new MQTT connection
 		    MqttClient::ConnectResult connectResult;
 		    // Connect
 		    {
-			    MQTTPacket_connectData options = MQTTPacket_connectData_initializer;
-			    options.MQTTVersion = 4;
-			    options.clientID.cstring = (char*)"kids-bedroom-lights";
-                options.username.cstring = (char*)"KidsBedroomLights";
-                options.password.cstring = (char*)"Bo11ock3";
+                MQTTPacket_connectData options = MQTTPacket_connectData_initializer;
+                options.MQTTVersion = 4;
+                options.clientID.cstring = (char*)m_clientId.c_str();
+                options.username.cstring = (char*)m_username.c_str();
+                options.password.cstring = (char*)m_password.c_str();
 			    options.cleansession = true;
-			    options.keepAliveInterval = 15; // 15 seconds
-                Serial.println("connect to mqtt");
+			    options.keepAliveInterval = 60; // 15 seconds
+                LOG_PRINTFLN("connect to mqtt");
 
 			    MqttClient::Error::type rc = mqtt->connect(options, connectResult);
 			    if (rc != MqttClient::Error::SUCCESS) {
 				    LOG_PRINTFLN("Connection error: %i", rc);
-				    return;
+                    return false;
 			    }
 
 		    }
 		    {
 			    // Add subscribe here if required
-			    LOG_PRINTFLN("Subscribing to: %s", MQTT_TOPIC_LIGHT1);
-			    MqttClient::Error::type rc = mqtt->subscribe( MQTT_TOPIC_LIGHT1, MqttClient::QOS0, m_cbMessageHandler );
-			    if (rc != MqttClient::Error::SUCCESS) {
-				    LOG_PRINTFLN("Subscribe error: %i", rc);
-				    LOG_PRINTFLN("Drop connection");
-				    mqtt->disconnect();
-				    return;
-			    }
-			    LOG_PRINTFLN("Subscribing to: %s", MQTT_TOPIC_LIGHT2);
-			    rc = mqtt->subscribe( MQTT_TOPIC_LIGHT2, MqttClient::QOS0, m_cbMessageHandler );
-			    if (rc != MqttClient::Error::SUCCESS) {
-				    LOG_PRINTFLN("Subscribe error: %i", rc);
-				    LOG_PRINTFLN("Drop connection");
-				    mqtt->disconnect();
-				    return;
-			    }
+                for( const std::string& topic : m_topics )
+                {
+                    LOG_PRINTFLN("Subscribing to: %s", topic.c_str());
+                    Serial.println(topic.c_str());
+                    MqttClient::Error::type rc = mqtt->subscribe( topic.c_str(), MqttClient::QOS0, m_cbMessageHandler );
+                    if (rc != MqttClient::Error::SUCCESS) {
+                        LOG_PRINTFLN("Subscribe error: %i", rc);
+                        LOG_PRINTFLN("Drop connection");
+                        mqtt->disconnect();
+                        return false;
+                    }
+                }
 		    }
 	    } else {
 		    {
 			    // Add publish here if required
 		    }
-            mqtt->yield(5000);
+            mqtt->yield(5);
 	    }
+        return true;
     }
 
 public:
+    std::string         m_serverId;
+    std::string         m_clientId;
+    std::string         m_username;
+    std::string         m_password;
     MqttClient::System *mqttSystem = nullptr;
     MqttClient::Logger *mqttLogger = nullptr;
     MqttClient::Network * mqttNetwork = nullptr;
     MqttClient::MessageHandlerCbk m_cbMessageHandler = nullptr;
+    std::list<std::string>   m_topics;
 };
 
+#endif //MQTT_NETWORK_H

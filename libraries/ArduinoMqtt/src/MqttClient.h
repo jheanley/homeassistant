@@ -229,7 +229,7 @@ public:
 		Message											&message;
 	};
 
-	typedef void (*MessageHandlerCbk)(MessageData&);
+    typedef std::function<void(MessageData&)> MessageHandlerCbk;//void (*MessageHandlerCbk)(MessageData&);
 
 	struct MessageHandler {
 		const char										*topic = NULL;
