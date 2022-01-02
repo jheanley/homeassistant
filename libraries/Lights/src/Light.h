@@ -31,6 +31,9 @@ public:
     std::string name() { return m_name; }
     void setName( const std::string& name ) { m_name = name; }
 
+    bool isValidState( uint flag ) const { return (m_validStateFlags & flag) != 0; }
+    void setValidState( uint flag ) { m_validStateFlags |= flag; }
+
     bool stateChanged() const { return m_stateUpdateFlags != 0; }
     void clearStateFlags() { m_stateUpdateFlags = 0; }
     void setStateFlag( uint flag ) { m_stateUpdateFlags |= flag; }

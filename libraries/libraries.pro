@@ -1,0 +1,8 @@
+include(ArduinoMqtt/ArduinoMqtt.pri)
+include(FastLED/FastLED.pri)
+include(common/common.pri)
+include(Lights/lights.pri)
+include(blinds/blinds.pri)
+include(ArduinoMqtt/ArduinoMqtt.pri)
+include(ArduinoJson/ArduinoJson.pri)
+include(NodeEngine/node-engine.pri)

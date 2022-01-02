@@ -350,6 +350,10 @@ protected:
             *pData++ = pixels.loadAndScale0();
             *pData++ = pixels.loadAndScale1();
             *pData++ = pixels.loadAndScale2();
+            if( pixels.pixelSize() == 4 )
+            {
+                *pData++ = pixels.loadAndScale3();
+            }
             pixels.advanceData();
             pixels.stepDithering();
         }

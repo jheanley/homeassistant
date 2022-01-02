@@ -64,6 +64,29 @@ void HueLight::setColour(const CRGB& colour)
     setUpdatePixels(true);
 }
 
+void HueLight::setColour( const CRGBW& colour )
+{
+    for( int i = 0 ; i < MAX_STORED_COLOURS - 1 ; ++i )
+    {
+        m_colours[i+1] = m_colours[i];
+    }
+    m_colours[0] = colour;
+    fill_solid(m_pixels, m_pixelSize, m_numPixels, colour);
+    setStateFlag(Colour);
+    setUpdatePixels(true);
+}
+
+void HueLight::setWhite( uint8_t white )
+{
+    m_white = white;
+    if( isValidState(White) )
+    {
+        //CRGBW colourm_colours[0]);
+        setStateFlag(White);
+        setUpdatePixels(true);
+    }
+}
+
 void HueLight::setEffect( const std::string& effect )
 {
     if( m_currentEffectName != effect )

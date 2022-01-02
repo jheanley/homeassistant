@@ -5,30 +5,6 @@
 
 #define FPS 50
 
-StaticJsonDocument<1024> doc;
-
-void processMessage(MqttClient::MessageData& md)
-{
-    const MqttClient::Message& msg = md.message;
-    const MQTTString& topicName = md.topicName;
-    char topicStr[topicName.lenstring.len + 1];
-    memcpy(topicStr, topicName.lenstring.data, topicName.lenstring.len);
-    topicStr[topicName.lenstring.len] = '\0';
-    char payload[msg.payloadLen + 1];
-    memcpy(payload, msg.payload, msg.payloadLen);
-    payload[msg.payloadLen] = '\0';
-    DeserializationError error = deserializeJson(doc, payload);
-    String topicStdStr(topicStr);
-    LOG_PRINTFLN(
-                "Message arrived: qos %d, retained %d, dup %d, packetid %d, payload:[%s]",
-                msg.qos, msg.retained, msg.dup, msg.id, payload
-                );
-    LOG_PRINTFLN("topic: %s", topicStr);
-    //pLightManager->processMessage(topicStr, doc);
-
-    doc.clear();
-}
-
 NodeEngine::NodeEngine()
 {
 
@@ -44,14 +20,17 @@ void NodeEngine::addUpdateHandler(NodeEngineObject* pHandler)
     m_updateHandlers.push_back(pHandler);
 }
 
-void NodeEngine::start()
+void NodeEngine::init()
 {
     Serial.begin(HW_UART_SPEED);
     while (!Serial);
     Serial.println("");
-    Serial.println("setup()");
+    Serial.println(" NodeEngine::init()");
     delay( 2000 ); // power-up safety delay
+}
 
+void NodeEngine::start()
+{
     connectWiFi();
     initOTA();
     initMqtt();
@@ -117,13 +96,16 @@ void NodeEngine::initOTA()
 
         // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
         Serial.println("Start updating " + type);
-        })
+        });
+    ArduinoOTA
         .onEnd([]() {
         Serial.println("\nEnd");
-        })
+        });
+    ArduinoOTA
         .onProgress([](unsigned int progress, unsigned int total) {
         Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-        })
+        });
+    ArduinoOTA
         .onError([](ota_error_t error) {
         Serial.printf("Error[%u]: ", error);
         if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
@@ -150,32 +132,31 @@ void NodeEngine::initMqtt()
 
 void NodeEngine::checkMqttObjectStateMessages()
 {
-    std::string deviceid;
+    // device should set deviceTopic inside nextStateMessage, e.g. light1/state
+    // this will then be added to the client topic
+    // e.g. homeassistant/kitchen-lights/light1/state
+    std::string deviceTopic;
 
     for( NodeEngineMqttListener* pListener : m_mqttListeners )
     {
-        while( pListener->nextStateMessage(deviceid, doc) )
+        std::string messagePayload;
+        while( pListener->nextStateMessage(deviceTopic, messagePayload) )
         {
             Serial.print("state change for: ");
-            Serial.println(deviceid.c_str());
-            String output;
-            serializeJson(doc, output);
-
-            doc.clear();
+            Serial.println(deviceTopic.c_str());
 
             MqttClient::Message message;
 
             message.qos = MqttClient::QOS0;
             message.retained = false;
             message.dup = false;
-            message.payload = (void*) output.c_str();
-            message.payloadLen = strlen(output.c_str());
+            message.payload = (void*) messagePayload.c_str();
+            message.payloadLen = strlen(messagePayload.c_str());
 
             std::string topic("homeassistant/");
             topic.append(m_mqttClientId);
             topic.append("/");
-            topic.append(deviceid);
-            topic.append("/state");
+            topic.append(deviceTopic);
 
             mqtt->publish(topic.c_str(), message);
         }
@@ -192,8 +173,8 @@ void NodeEngine::processMessage(MqttClient::MessageData& md)
     char payload[msg.payloadLen + 1];
     memcpy(payload, msg.payload, msg.payloadLen);
     payload[msg.payloadLen] = '\0';
-    DeserializationError error = deserializeJson(doc, payload);
     String topicStdStr(topicStr);
+    std::string payloadStr(payload);
     LOG_PRINTFLN(
                 "Message arrived: qos %d, retained %d, dup %d, packetid %d, payload:[%s]",
                 msg.qos, msg.retained, msg.dup, msg.id, payload
@@ -202,8 +183,6 @@ void NodeEngine::processMessage(MqttClient::MessageData& md)
 
     for( NodeEngineMqttListener* pListener : m_mqttListeners )
     {
-        pListener->processMessage(topicStr, doc);
+        pListener->processMessage(topicStr, payloadStr);
     }
-
-    doc.clear();
 }

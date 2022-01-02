@@ -13,6 +13,7 @@ class Effect;
 class HueLight : public Light
 {
 
+public:
     enum HueStateFlags
     {
         Colour = 0x04,
@@ -43,6 +44,10 @@ public:
 
   void setColour( const CRGB& colour );
 
+  void setColour( const CRGBW& colour );
+
+  void setWhite( uint8_t white );
+
   void setEffect( const std::string& effect );
 
   void setLed( int index, const CRGB& colour );
@@ -59,6 +64,7 @@ private:
   uint8_t         m_pixelSize;
   CLEDController* m_controller;
   CRGB            m_colours[MAX_STORED_COLOURS];
+  uint8_t         m_white;
   CRGBPalette16   m_currentPalette;
   std::string     m_currentEffectName;
   Effect*         m_currentEffect = nullptr;

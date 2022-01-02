@@ -41,6 +41,16 @@ void fill_solid(uint8_t* targetArray, uint8_t pixelSize, int numToFill, const CR
     }
 }
 
+void fill_solid(uint8_t* targetArray, uint8_t pixelSize, int numToFill, const struct CRGBW& colour)
+{
+    uint8_t* pCurrentPixel(targetArray);
+    for( int i = 0; i < numToFill; ++i) {
+        CRGBW& targetPixel = *(CRGBW*)pCurrentPixel;
+        targetPixel = colour;
+        pCurrentPixel += pixelSize;
+    }
+}
+
 
 // void fill_solid( struct CRGB* targetArray, int numToFill,
 // 				 const struct CHSV& hsvColor)

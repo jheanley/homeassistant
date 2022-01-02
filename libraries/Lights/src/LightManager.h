@@ -20,21 +20,29 @@ public:
         //uint8_t* pixels = (uint8_t*)malloc(numLeds * pixelSize);
         memset((void*)leds, 0x00, numLeds * pixelSize);
         CLEDController* controller(nullptr);
+        HueLight* pLight(new HueLight);
         if( RGB_ORDER == RGBW )
         {
             controller = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>((CRGBW*)leds, numLeds);
+            pLight->setValidState(HueLight::White);
         }
         else
         {
             controller = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>((CRGB*)leds, numLeds);
         }
 
-        HueLight* pLight(new HueLight);
         pLight->init(leds, pixelSize, numLeds);
         pLight->setName(name);
         pLight->setPixelController(controller);
 
-        pLight->setColour(CRGB(255,171,64));
+        if( RGB_ORDER == RGBW )
+        {
+            pLight->setColour(CRGB(255,171,64));
+        }
+        else
+        {
+            pLight->setColour(CRGBW(0,0,0, 125));
+        }
 
         m_lights.push_back(pLight);
         return pLight;
@@ -44,9 +52,9 @@ public:
 
     void update( float elapsed ) override;
 
-    bool nextStateMessage( std::string& deviceid, StaticJsonDocument<1024>& doc) override;
+    bool nextStateMessage(std::string& deviceTopic, std::string& messagePayload ) override;
 
-    void processMessage( const std::string& topic, StaticJsonDocument<1024>& doc ) override;
+    void processMessage(const std::string& topic, const std::string& messagePayload ) override;
 
 private:
     std::list<Light*> m_lights;

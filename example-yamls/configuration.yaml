@@ -1,0 +1,119 @@
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+# Uncomment this if you are using SSL/TLS, running in Docker container, etc.
+# http:
+#   base_url: example.duckdns.org:8123
+
+homeassistant:
+  ### The following installs all package files
+  packages: !include_dir_named packages
+
+
+# Text to speech
+tts:
+  - platform: google_translate
+  
+mqtt:
+  broker: 192.168.0.26
+  
+light:
+  - platform: mqtt
+    name: "light1"
+    command_topic: "homeassistant/light1/state/set"
+
+  - platform: mqtt
+    name: "light2"
+    command_topic: "homeassistant/light2/state/set"
+    
+  - platform: mqtt
+    schema: json
+    name: "Json Test Light 1"
+    state_topic: "homeassistant/test-bed/light1/state"
+    command_topic: "homeassistant/test-bed/light1/state/set"
+    brightness: true
+    rgb: true
+    white_value: true
+    effect: true
+    effect_list: [none, rainbow, night_rider, water_drops, gentle_waves]
+    optimistic: false
+    qos: 0
+    
+  - platform: mqtt
+    schema: json
+    name: "Json Test Light 2"
+    state_topic: "homeassistant/test-bed/light2/state"
+    command_topic: "homeassistant/test-bed/light2/state/set"
+    brightness: true
+    rgb: true
+    white_value: true
+    effect: true
+    effect_list: [none, rainbow, night_rider, water_drops, gentle_waves]
+    optimistic: false
+    qos: 0
+    
+  - platform: mqtt
+    schema: json
+    name: "Loft Bedroom"
+    state_topic: "homeassistant/loft-bedroom/light1/state"
+    command_topic: "homeassistant/loft-bedroom/light1/state/set"
+    brightness: true
+    rgb: true
+    effect: true
+    effect_list: [none, rainbow, night_rider, water_drops, gentle_waves]
+    optimistic: false
+    qos: 0
+    
+  - platform: mqtt
+    schema: json
+    name: "Gaming Desk"
+    state_topic: "homeassistant/gaming-desk/light1/state"
+    command_topic: "homeassistant/gaming-desk/light1/state/set"
+    brightness: true
+    rgb: true
+    effect: true
+    effect_list: [none, rainbow, night_rider]
+    optimistic: false
+    qos: 0
+    
+  - platform: mqtt
+    schema: json
+    name: "Fionn's Light"
+    state_topic: "homeassistant/kids-bedroom/light1/state"
+    command_topic: "homeassistant/kids-bedroom/light1/state/set"
+    brightness: true
+    rgb: true
+    effect: true
+    effect_list: [none, rainbow]
+    optimistic: false
+    qos: 0
+
+  - platform: mqtt
+    schema: json
+    name: "Shea's Light"
+    state_topic: "homeassistant/kids-bedroom/light2/state"
+    command_topic: "homeassistant/kids-bedroom/light2/state/set"
+    brightness: true
+    rgb: true
+    effect: true
+    effect_list: [none, rainbow]
+    optimistic: false
+    qos: 0
+
+  - platform: mqtt
+    schema: json
+    name: "Kitchen Sideboard"
+    state_topic: "homeassistant/kitchen/light1/state"
+    command_topic: "homeassistant/kitchen/light1/state/set"
+    brightness: true
+    rgb: true
+    effect: true
+    effect_list: [none, rainbow]
+    optimistic: false
+    qos: 0
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml

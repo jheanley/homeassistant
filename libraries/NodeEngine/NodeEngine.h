@@ -25,6 +25,7 @@ public:
     void addMqttListener( NodeEngineMqttListener* pListener );
     void addUpdateHandler( NodeEngineObject* pHandler );
 
+    void init();
     void start();
     void update();
 
