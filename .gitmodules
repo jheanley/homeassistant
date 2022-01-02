@@ -1,0 +1,4 @@
+[submodule "libraries/FastLED"]
+	path = libraries/FastLED
+	url = git@github.com:jheanley/FastLED.git
+	branch = rgbw
