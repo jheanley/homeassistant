@@ -1,14 +1,135 @@
 #include "HueLight.h"
 
+#include "effects/SolidEffect.h"
 #include "effects/AuroraEffect.h"
 
 HueLight::HueLight()
 {
-
+    memset(m_touchReadings, 0x00, sizeof(uint16_t) * MAX_TOUCH_READINGS);
 }
 
 HueLight::~HueLight()
 {
+}
+
+bool HueLight::aboveTouchThreshold(uint32_t threshold) const
+{
+    int maxValue(0);
+    for( int i = 0 ; i < MAX_TOUCH_READINGS ; ++i )
+    {
+        if( m_touchReadings[i] > maxValue )
+        {
+            maxValue = m_touchReadings[i];
+        }
+    }
+    return maxValue > threshold;
+}
+
+void HueLight::printTouchReadings() const
+{
+        Serial.print("Touch Readings: ");
+        for( int i = 0 ; i < MAX_TOUCH_READINGS ; ++i )
+        {
+            Serial.print(m_touchReadings[i]);
+            Serial.print(", ");
+        }
+        Serial.println("");
+}
+
+void HueLight::handleTouch(float elapsed)
+{
+    memmove(m_touchReadings + 1, m_touchReadings, sizeof(uint16_t) * (MAX_TOUCH_READINGS-1));
+    m_touchReadings[0] = analogRead(A0);
+
+    bool touched(false);
+
+    if( !m_touchedLastFrame )
+    {
+        touched = aboveTouchThreshold(25);
+    }
+    else
+    {
+        touched = aboveTouchThreshold(12);
+    }
+
+    if( touched
+            && !m_touchedLastFrame )
+    {
+        Serial.println("Started touching sensor");
+        m_touchTime = 0.0f;
+        m_changingHue = false;
+    }
+    else if( touched
+             && m_touchedLastFrame )
+    {
+        m_touchTime += elapsed;
+        if( m_touchTime > 1.5f )
+        {
+            if( !m_changingHue )
+            {
+                Serial.println("Change hue mode");
+                m_changingHue = true;
+
+                m_startHue = rgb2hsv_approximate(m_colours[0]).hue;
+
+                m_touchUpdateTimer = 0.0f;
+            }
+            m_startHue += elapsed * 5;
+            if( m_startHue > 255 )
+            {
+                m_startHue = 0.0f;
+            }
+            CHSV hsv;
+            hsv.hue = m_startHue;
+            hsv.val = 255;
+            hsv.sat = 240;
+
+            setColour(CRGB(hsv));
+        }
+    }
+    else if( !touched
+             && m_touchedLastFrame )
+    {
+        //Serial.println("Stopped touching sensor");
+        //printTouchReadings();
+        m_changingHue = false;
+        if( m_touchTime < 1.5f )
+        {
+            //Serial.println("Change brightness");
+            if( brightness() < 80 )
+            {
+                setBrightness(80);
+            }
+            else if( brightness() < 160 )
+            {
+                setBrightness(160);
+            }
+            else if( brightness() < 255 )
+            {
+                setBrightness(255);
+            }
+            else
+            {
+                setBrightness(0);
+            }
+        }
+    }
+
+    m_touchedLastFrame = touched;
+
+    if( m_touchedLastFrame
+            && m_touchTime > 1.5f )
+    {
+        m_touchUpdateTimer += elapsed;
+        if( m_touchUpdateTimer < 1.0f )
+        {
+            clearStateFlags();
+        }
+        if( m_touchUpdateTimer > 1.0f )
+        {
+            m_touchUpdateTimer = 0.0f;
+        }
+    }
 }
 
 void HueLight::setPixelController(CLEDController* controller)
@@ -25,10 +146,17 @@ void HueLight::init(uint8_t* pixels, uint8_t pixelSize, uint numPixels)
     setStateFlag(Power);
     setStateFlag(Colour);
     setStateFlag(Brightness);
+    if( pixelSize == 4 )
+    {
+        setStateFlag(White);
+    }
 }
   
 void HueLight::update( float elapsed )
 {
+    //Serial.println("HueLight::update");
+    handleTouch(elapsed);
+
     if( m_currentEffect )
     {
         m_currentEffect->update(elapsed);
@@ -40,6 +168,7 @@ void HueLight::apply()
 {
     if( updatePixels() )
     {
+        //Serial.println("HueLight::apply");
         uint8_t currentBrightness = brightness();
         if( state() == Off )
         {
@@ -47,6 +176,7 @@ void HueLight::apply()
         }
         CRGB scale(currentBrightness, currentBrightness, currentBrightness);
         m_controller->setDither(0);
+        //FastLED.show();
         m_controller->show(m_pixels, m_pixelSize, m_numPixels, currentBrightness);
     }
     setUpdatePixels(false);
@@ -54,6 +184,12 @@ void HueLight::apply()
 
 void HueLight::setColour(const CRGB& colour)
 {
+    Serial.print("HueLight::setColour - R: ");
+    Serial.print(colour.r);
+    Serial.print(", G: ");
+    Serial.print(colour.g);
+    Serial.print(", B: ");
+    Serial.println(colour.b);
     for( int i = 0 ; i < MAX_STORED_COLOURS - 1 ; ++i )
     {
         m_colours[i+1] = m_colours[i];
@@ -61,11 +197,18 @@ void HueLight::setColour(const CRGB& colour)
     m_colours[0] = colour;
     fill_solid(m_pixels, m_pixelSize, m_numPixels, colour);
     setStateFlag(Colour);
-    setUpdatePixels(true);
 }
 
 void HueLight::setColour( const CRGBW& colour )
 {
+    Serial.print("HueLight::setColour - R: ");
+    Serial.print(colour.r);
+    Serial.print(", G: ");
+    Serial.print(colour.g);
+    Serial.print(", B: ");
+    Serial.print(colour.b);
+    Serial.print(", W: ");
+    Serial.println(colour.w);
     for( int i = 0 ; i < MAX_STORED_COLOURS - 1 ; ++i )
     {
         m_colours[i+1] = m_colours[i];
@@ -79,15 +222,9 @@ void HueLight::setColour( const CRGBW& colour )
 void HueLight::setWhite( uint8_t white )
 {
     m_white = white;
-    if( isValidState(White) )
-    {
-        //CRGBW colourm_colours[0]);
-        setStateFlag(White);
-        setUpdatePixels(true);
-    }
 }
 
-void HueLight::setEffect( const std::string& effect )
+void HueLight::setEffect( const String& effect )
 {
     if( m_currentEffectName != effect )
     {
@@ -97,7 +234,14 @@ void HueLight::setEffect( const std::string& effect )
             delete m_currentEffect;
             m_currentEffect = nullptr;
         }
-        if( effect == "rainbow" )
+        if( effect == "none"
+                || effect == "solid" )
+        {
+            m_currentEffect = new SolidEffect();
+            m_currentEffect->init(this);
+        }
+        if( effect == "rainbow"
+                || effect == "aurora" )
         {
             m_currentEffect = new AuroraEffect();
             m_currentEffect->init(this);
@@ -159,6 +303,11 @@ void HueLight::processState(const StaticJsonDocument<1024>& jsonDoc)
         newColour.r = colourDoc["r"];
         newColour.g = colourDoc["g"];
         newColour.b = colourDoc["b"];
+        if( colourDoc.containsKey("w") )
+        {
+            uint8_t white = colourDoc["w"];
+            setWhite(white);
+        }
 
         setColour(newColour);
     }
@@ -167,15 +316,18 @@ void HueLight::processState(const StaticJsonDocument<1024>& jsonDoc)
     {
         setEffect(jsonDoc["effect"]);
     }
+    setUpdatePixels(true);
 }
 
 void HueLight::getState(StaticJsonDocument<1024>& jsonDoc)
 {
     jsonDoc["state"] = getStateString();
+    jsonDoc["brightness"] = brightness();
     StaticJsonDocument<200> doc;
     doc["r"] = m_colours[0].r;
     doc["g"] = m_colours[0].g;
     doc["b"] = m_colours[0].b;
+    doc["w"] = m_white;
 
     jsonDoc["color"] = doc;
 }

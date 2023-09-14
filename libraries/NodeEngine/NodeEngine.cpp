@@ -3,7 +3,7 @@
 #include "NodeEngineMqttListener.h"
 #include "NodeEngineObject.h"
 
-#define FPS 50
+#define FPS 10
 
 NodeEngine::NodeEngine()
 {
@@ -24,9 +24,9 @@ void NodeEngine::init()
 {
     Serial.begin(HW_UART_SPEED);
     while (!Serial);
-    Serial.println("");
-    Serial.println(" NodeEngine::init()");
     delay( 2000 ); // power-up safety delay
+    //Serial.println("");
+    Serial.println(" NodeEngine::init()");
 }
 
 void NodeEngine::start()
@@ -75,7 +75,7 @@ void NodeEngine::connectWiFi()
         Serial.print(".");
     }
     //print a new line, then print WiFi connected and the IP address
-    Serial.println("");
+    //Serial.println("");
     Serial.println("WiFi connected");
     // Print the IP address
     Serial.println(WiFi.localIP());
@@ -143,7 +143,6 @@ void NodeEngine::checkMqttObjectStateMessages()
         while( pListener->nextStateMessage(deviceTopic, messagePayload) )
         {
             Serial.print("state change for: ");
-            Serial.println(deviceTopic.c_str());
 
             MqttClient::Message message;
 
@@ -157,6 +156,8 @@ void NodeEngine::checkMqttObjectStateMessages()
             topic.append(m_mqttClientId);
             topic.append("/");
             topic.append(deviceTopic);
+
+            Serial.println(topic.c_str());
 
             mqtt->publish(topic.c_str(), message);
         }

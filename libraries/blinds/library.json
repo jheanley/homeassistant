@@ -1,10 +1,16 @@
 {
     "name": "Blinds",
     "description": "",
+    "homepage": "",
     "authors": [
+        {
+            "name": "jheanley",
+            "url": ""
+        }
     ],
     "version": "1.0.0",
     "license": "MIT",
+    "homepage": "http://fastled.io",
     "frameworks": "arduino",
     "platforms": "atmelavr, atmelsam, freescalekinetis, nordicnrf51, nxplpc, ststm32, teensy, espressif8266, espressif32, nordicnrf52",
     "build": {

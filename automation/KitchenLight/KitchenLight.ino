@@ -12,7 +12,7 @@
 #define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
 
-const char* MQTT_CLIENT_ID = "loft-bedroom";
+const char* MQTT_CLIENT_ID = "test-bed";
 
 NodeEngine* g_pNodeEngine;
 
@@ -30,8 +30,8 @@ void setup() {
     g_pNodeEngine->addUpdateHandler(pLightManager);
 
     //FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
-    pLightManager->addLightStrip<WS2812, DATA_PIN, GRB>(NUM_LEDS, "light1");
-    //pLightManager->addLightStrip<SK6812, DATA_PIN, RGBW>(60);
+    //pLightManager->addLightStrip<WS2812, DATA_PIN, GRB>(NUM_LEDS, "light1");
+    pLightManager->addLightStrip<SK6812, DATA_PIN, RGBW>(60, "light1");
     //pLightManager->showColour(CRGB(0, 0, 0));
 
     g_pNodeEngine->start();

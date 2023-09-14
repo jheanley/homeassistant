@@ -16,12 +16,13 @@ public:
     template<template<uint8_t DATA_PIN, EOrder RGB_ORDER> class CHIPSET, uint8_t DATA_PIN, EOrder RGB_ORDER>
     Light* addLightStrip( int numLeds, const std::string& name )
     {
-        uint8_t pixelSize = RGB_ORDER == RGBW ? 4 : 3;
+        uint8_t pixelSize = (RGB_ORDER == RGBW || RGB_ORDER == GRBW) ? 4 : 3;
         //uint8_t* pixels = (uint8_t*)malloc(numLeds * pixelSize);
         memset((void*)leds, 0x00, numLeds * pixelSize);
         CLEDController* controller(nullptr);
         HueLight* pLight(new HueLight);
-        if( RGB_ORDER == RGBW )
+        if( RGB_ORDER == RGBW
+                || RGB_ORDER == GRBW )
         {
             controller = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>((CRGBW*)leds, numLeds);
             pLight->setValidState(HueLight::White);
@@ -35,13 +36,14 @@ public:
         pLight->setName(name);
         pLight->setPixelController(controller);
 
-        if( RGB_ORDER == RGBW )
+        if( RGB_ORDER == RGBW
+                || RGB_ORDER == GRBW )
         {
-            pLight->setColour(CRGB(255,171,64));
+            pLight->setColour(CRGBW(0,0,0, 125));
         }
         else
         {
-            pLight->setColour(CRGBW(0,0,0, 125));
+            pLight->setColour(CRGB(255,171,64));
         }
 
         m_lights.push_back(pLight);

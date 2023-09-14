@@ -36,8 +36,10 @@ bool LightManager::nextStateMessage(std::string& deviceTopic, std::string& messa
             deviceTopic.append("/state");
             pLight->getState(doc);
             pLight->clearStateFlags();
-            String output(messagePayload.c_str());
-            serializeJson(doc, messagePayload);
+            String output;
+            serializeJson(doc, output);
+
+            messagePayload = output.c_str();
 
             doc.clear();
             return true;

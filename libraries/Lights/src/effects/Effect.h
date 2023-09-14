@@ -2,6 +2,7 @@
 #define EFFECT_H
 
 #include "FastLED.h"
+#include <string>
 
 class HueLight;
 
@@ -19,6 +20,8 @@ public:
 
 public:
     Effect();
+
+    virtual std::string name() const = 0;
 
     HueLight* light() const { return m_pLight; }
 

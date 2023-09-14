@@ -6,3 +6,6 @@ include(../libraries/ArduinoMqtt/ArduinoMqtt.pri)
 include(../libraries/ArduinoJson/ArduinoJson.pri)
 include(../libraries/NodeEngine/node-engine.pri)
 include(../KitchenLight/kitchen-light.pri)
+
+HEADERS += \
+    KitchenLight.ino

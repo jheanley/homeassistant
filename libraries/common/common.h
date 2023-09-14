@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <Arduino.h>
+#include "SPI.h"
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #else
@@ -17,7 +17,7 @@
 #define JSON_DOC_SIZE 512
 
 #define LOG_PRINTFLN(fmt, ...)  logfln(fmt, ##__VA_ARGS__)
-#define LOG_SIZE_MAX 128
+#define LOG_SIZE_MAX 256
 void logfln(const char *fmt, ...);
 
 #endif

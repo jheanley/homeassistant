@@ -121,6 +121,8 @@ public:
 
     ~AuroraEffect();
 
+    virtual std::string name() const override { return "aurora"; }
+
     void init( HueLight* pLight ) override;
 
     void update( float elapsed ) override;

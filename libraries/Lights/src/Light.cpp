@@ -59,6 +59,8 @@ int Light::brightness() const
 
 void Light::setBrightness(int brightness)
 {
+    Serial.print("Light::setBrightness - ");
+    Serial.println(brightness);
     m_brightness = max(min(brightness, 255), 0);
     m_brightness = brightness;
     setStateFlag(Brightness);

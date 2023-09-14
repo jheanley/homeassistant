@@ -1,12 +1,10 @@
 /*****************  NEEDED TO MAKE NODEMCU WORK ***************************/
-//#define FASTLED_INTERRUPT_RETRY_COUNT 0
-//#define FASTLED_ESP8266_RAW_PIN_ORDER
-//#define FASTLED_ALLOW_INTERRUPTS 0
 
 #include "FastLED.h"
 #include "Light.h"
 
 #define MAX_STORED_COLOURS 3
+#define MAX_TOUCH_READINGS 10
 
 class Effect;
 
@@ -30,6 +28,12 @@ public:
 
   uint8_t  pixelSize() const { return m_pixelSize; }
 
+  bool aboveTouchThreshold( uint32_t threshold ) const;
+
+  void printTouchReadings() const;
+
+  void handleTouch( float elapsed );
+
   const CRGBPalette16& palette() const { return m_currentPalette; }
 
   const CRGB& colour( int index = 0 ) { return m_colours[index]; }
@@ -48,7 +52,7 @@ public:
 
   void setWhite( uint8_t white );
 
-  void setEffect( const std::string& effect );
+  void setEffect( const String& effect );
 
   void setLed( int index, const CRGB& colour );
 
@@ -66,6 +70,12 @@ private:
   CRGB            m_colours[MAX_STORED_COLOURS];
   uint8_t         m_white;
   CRGBPalette16   m_currentPalette;
-  std::string     m_currentEffectName;
+  String     m_currentEffectName;
+  uint16_t        m_touchReadings[MAX_TOUCH_READINGS];
+  float           m_startHue = 0.0f;
+  float           m_touchTime = 0.0f;
+  float           m_touchUpdateTimer = 0.0f;
+  bool            m_touchedLastFrame = false;
+  bool            m_changingHue = false;
   Effect*         m_currentEffect = nullptr;
 };
